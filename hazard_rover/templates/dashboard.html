@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hazard Rover Kontrolpanel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #00cc44;
+            padding-bottom: 15px;
+        }
+        header h1 {
+            color: #00cc44;
+            font-size: 36px;
+            letter-spacing: 3px;
+        }
+        header p {
+            color: #aaaaaa;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .status-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #00cc44;
+            animation: pulse 1.5s infinite;
+        }
+        .status-dot.offline {
+            background-color: #cc0000;
+            animation: none;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+        .status-text {
+            font-size: 14px;
+            color: #aaaaaa;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: #2a2a2a;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #333333;
+        }
+        .card h2 {
+            color: #00cc44;
+            margin-bottom: 5px;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .card .subtitle {
+            color: #888888;
+            font-size: 11px;
+            margin-bottom: 15px;
+        }
+        .value {
+            font-size: 52px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+        .value.warning {
+            color: #ffaa00;
+        }
+        .value.danger {
+            color: #cc0000;
+        }
+        .unit {
+            font-size: 16px;
+            color: #aaaaaa;
+            margin-top: 5px;
+        }
+        .camera-card {
+            grid-column: span 2;
+        }
+        .history-card {
+            grid-column: span 2;
+        }
+        .camera-card img {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid #333333;
+        }
+        .camera-label {
+            color: #888888;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        th {
+            background-color: #00cc44;
+            color: #000000;
+            padding: 10px;
+            text-align: left;
+            font-weight: bold;
+        }
+        td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #333333;
+            color: #cccccc;
+        }
+        tr:hover {
+            background-color: #333333;
+        }
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #555555;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🤖 CMROVER KONTROLPANEL</h1>
+        <p>Hazard Rover — Realtidsovervågning af miljødata</p>
+    </header>
+
+    <div class="status-bar">
+        <div class="status-dot" id="status-dot"></div>
+        <span class="status-text" id="status-text">Forbinder til rover...</span>
+    </div>
+
+    <div class="dashboard">
+        <div class="card">
+            <h2>🌡️ Temperatur</h2>
+            <div class="subtitle">DHT22 Temperatursensor</div>
+            <div class="value" id="temperature">--</div>
+            <div class="unit">°C</div>
+        </div>
+
+        <div class="card">
+            <h2>💧 Luftfugtighed</h2>
+            <div class="subtitle">DHT22 Fugtighedssensor</div>
+            <div class="value" id="humidity">--</div>
+            <div class="unit">%</div>
+        </div>
+
+        <div class="card">
+            <h2>☁️ Luftkvalitet</h2>
+            <div class="subtitle">MQ135 — CO2, NH3, Røg</div>
+            <div class="value" id="gas">--</div>
+            <div class="unit">ppm</div>
+        </div>
+
+        <div class="card">
+            <h2>🔥 Brændbar Gas / Røg</h2>
+            <div class="subtitle">MQ2 — LPG, Metan, Hydrogen</div>
+            <div class="value" id="mq2">--</div>
+            <div class="unit">ppm</div>
+        </div>
+
+        <div class="card camera-card">
+            <h2>📷 Live Kamera Feed</h2>
+            <div class="subtitle">Raspberry Pi Kamera Modul 3</div>
+            <img src="/video_feed" alt="Kamera Feed"/>
+            <div class="camera-label">Live feed — opdateres kontinuerligt</div>
+        </div>
+
+        <div class="card history-card">
+            <h2>📊 Sensordata Log</h2>
+            <div class="subtitle">Seneste 20 målinger fra SQLite database</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tidsstempel</th>
+                        <th>Temperatur (°C)</th>
+                        <th>Luftfugtighed (%)</th>
+                        <th>Luftkvalitet (ppm)</th>
+                        <th>Brændbar Gas (ppm)</th>
+                    </tr>
+                </thead>
+                <tbody id="history-table">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <footer>
+        <p>CMROVER — Hazard Robot Platform | Zealand Erhvervsakademi 2026</p>
+    </footer>
+
+    <script>
+        let isOnline = false;
+
+        function updateStatus(online) {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            if (online) {
+                dot.classList.remove('offline');
+                text.textContent = 'Rover online — modtager data';
+                isOnline = true;
+            } else {
+                dot.classList.add('offline');
+                text.textContent = 'Rover offline — ingen forbindelse';
+                isOnline = false;
+            }
+        }
+
+        function checkWarning(value, element, warningThreshold, dangerThreshold) {
+            const num = parseFloat(value);
+            element.classList.remove('warning', 'danger');
+            if (num >= dangerThreshold) {
+                element.classList.add('danger');
+            } else if (num >= warningThreshold) {
+                element.classList.add('warning');
+            }
+        }
+
+        function updateData() {
+            fetch('/data')
+                .then(response => response.json())
+                .then(data => {
+                    updateStatus(true);
+
+                    const tempEl = document.getElementById('temperature');
+                    const humEl = document.getElementById('humidity');
+                    const gasEl = document.getElementById('gas');
+                    const mq2El = document.getElementById('mq2');
+
+                    tempEl.textContent = data.temperature;
+                    humEl.textContent = data.humidity;
+                    gasEl.textContent = data.gas;
+                    mq2El.textContent = data.mq2;
+
+                    // Warning thresholds
+                    checkWarning(data.temperature, tempEl, 35, 50);
+                    checkWarning(data.gas, gasEl, 600, 1000);
+                    checkWarning(data.mq2, mq2El, 400, 700);
+                })
+                .catch(() => updateStatus(false));
+        }
+
+        function updateHistory() {
+            fetch('/history')
+                .then(response => response.json())
+                .then(rows => {
+                    const tbody = document.getElementById('history-table');
+                    tbody.innerHTML = '';
+                    rows.forEach(row => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${row.timestamp}</td>
+                            <td>${row.temperature}°C</td>
+                            <td>${row.humidity}%</td>
+                            <td>${row.gas} ppm</td>
+                            <td>${row.mq2} ppm</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                });
+        }
+
+        setInterval(updateData, 2000);
+        setInterval(updateHistory, 10000);
+        updateData();
+        updateHistory();
+    </script>
+</body>
+</html>
